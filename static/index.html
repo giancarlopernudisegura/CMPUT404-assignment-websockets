@@ -46,6 +46,7 @@
             with (context) {
                 beginPath();
                 lineWidth = 3;
+                shadowBlur = 10;
                 var x = entity["x"];
                 var y = entity["y"];
                 //moveTo(x,y);
@@ -69,7 +70,7 @@
         function clearFrame() {
             with (context) {
                 moveTo(0, 0);
-                fillStyle = "#000";
+                fillStyle = "#282a36";
                 fillRect(0, 0, W, H);
             }
 
@@ -228,16 +229,16 @@
         // Add the application specific mouse listeners!
         //XXX: TODO Make these prettier!
         mouse.mousedowners.push(function (x, y, clicked, e) {
-            addEntityWithoutName({ 'x': x, 'y': y, 'colour': 'blue' });
+            addEntityWithoutName({ 'x': x, 'y': y, 'colour': '#8be9fd' });
         });
 
         mouse.mouseuppers.push(function (x, y, clicked, e) {
-            addEntityWithoutName({ 'x': x, 'y': y, 'colour': 'red' });
+            addEntityWithoutName({ 'x': x, 'y': y, 'colour': '#ff5555' });
         });
 
         mouse.mousedraggers.push(function (x, y, clicked, e) {
             addEntityWithoutName({
-                'x': x, 'y': y, 'colour': 'green',
+                'x': x, 'y': y, 'colour': '50fa7b',
                 'radius': 10
             });
         });

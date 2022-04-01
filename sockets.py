@@ -115,7 +115,7 @@ def subscribe_socket(ws):
             msg = client.get()
             ws.send(msg)
     except Exception as e:
-        print(e)
+        print("WebSocket Error (/subscribe):", e, sep='\n')
     finally:
         clients.remove(client)
         gevent.kill(g)
