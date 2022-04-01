@@ -80,6 +80,9 @@ clients = []
 
 def set_listener(entity, data):
     """do something with the update !"""
+    msg = json.dumps({entity: data})
+    for client in clients:
+        client.put(msg)
 
 
 myWorld.add_set_listener(set_listener)
@@ -91,13 +94,18 @@ def hello():
     return app.send_static_file("index.html"), HTTPStatus.OK
 
 
+@app.route("/<picture>.png")
+def gino(picture):
+    return app.send_static_file(f"{picture}.png"), HTTPStatus.OK
+
+
 def read_ws(ws, client):
     """A greenlet function that reads from the websocket and updates the world"""
     msg = ws.receive()
     ws.send(msg)
     while msg:
         entities = json.loads(msg)
-        for entity, d in entities.items:
+        for entity, d in entities.items():
             myWorld.set(entity, d)
         msg = ws.receive()
     return {}
@@ -115,7 +123,7 @@ def subscribe_socket(ws):
             msg = client.get()
             ws.send(msg)
     except Exception as e:
-        print("WebSocket Error (/subscribe):", e, sep='\n')
+        print("WebSocket Error (/subscribe):", e, sep="\n")
     finally:
         clients.remove(client)
         gevent.kill(g)

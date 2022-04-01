@@ -17,10 +17,28 @@
         the specific language governing permissions and limitations under the License. "/>
     <script src=" json2.js">
     </script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            background-color: #282a36;
+        }
+
+        canvas {
+            cursor: crosshair;
+        }
+    </style>
 </head>
 
 <body bgcolor="white" height="100%" width="100%">
     <div id="debug"></div>
+    <!-- from: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage -->
+    <div style="display:none;">
+        <img src="gino1.png" id="gino1">
+        <img src="gino2.png" id="gino2">
+        <img src="gino3.png" id="gino3">
+    </div>
     <canvas id="c" width="100%" height="100%" style="-webkit-tap-highlight-color: transparent;"></canvas>
 
     <script>
@@ -32,6 +50,9 @@
         var H = canvas.height = window.innerHeight - 50;
         var wscounter = 0;
         var socket;
+        const gino1 = document.getElementById('gino1');
+        const gino2 = document.getElementById('gino2');
+        const gino3 = document.getElementById('gino3');
 
         function debug(str) {
             var debugDiv = document.getElementById('debug');
@@ -46,13 +67,22 @@
             with (context) {
                 beginPath();
                 lineWidth = 3;
-                shadowBlur = 10;
+                shadowBlur = 100;
+                shadowColor = "#ffffff0a";
                 var x = entity["x"];
                 var y = entity["y"];
                 //moveTo(x,y);
                 fillStyle = entity["colour"];
                 strokeStyle = fillStyle;
-                arc(x, y, (entity["radius"]) ? entity["radius"] : 50, 0, 2.0 * Math.PI, false);
+                let img;
+                if (entity["image"] == "gino1") {
+                    img = gino1;
+                } else if (entity["image"] == "gino2") {
+                    img = gino2;
+                } else if (entity["image"] == "gino3") {
+                    img = gino3;
+                }
+                drawImage(img, x - img.width / 2, y - img.height / 2);
                 stroke();
             }
         }
@@ -123,6 +153,13 @@
             world[entity] = data;
             drawNextFrame(); // (but should we?)
             //XXX: Send a XHTML Request that updates the entity you just modified!
+            fetch(`/entity/${entity}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
         }
         var counter = 0;
         function addEntityWithoutName(data) {
@@ -229,18 +266,15 @@
         // Add the application specific mouse listeners!
         //XXX: TODO Make these prettier!
         mouse.mousedowners.push(function (x, y, clicked, e) {
-            addEntityWithoutName({ 'x': x, 'y': y, 'colour': '#8be9fd' });
+            addEntityWithoutName({ 'x': x, 'y': y, image: "gino2" });
         });
 
         mouse.mouseuppers.push(function (x, y, clicked, e) {
-            addEntityWithoutName({ 'x': x, 'y': y, 'colour': '#ff5555' });
+            addEntityWithoutName({ 'x': x, 'y': y, image: "gino3" });
         });
 
         mouse.mousedraggers.push(function (x, y, clicked, e) {
-            addEntityWithoutName({
-                'x': x, 'y': y, 'colour': '#50fa7b',
-                'radius': 10
-            });
+            addEntityWithoutName({ 'x': x, 'y': y, image: "gino1" });
         });
 
 
@@ -252,10 +286,13 @@
         function wsSetup() {
             socket = new WebSocket(`ws://${host}/subscribe`);
             socket.onopen = () => {
-                ws.send(JSON.stringify({
-                    "type": "subscribe",
-                    "topic": "entity"
-                }));
+                fetch('/world')
+                    .then(res => res.json())
+                    .then(data => {
+                        world = data;
+                        drawNext = true;
+                        counter = Object.keys(world).length;
+                    });
             };
             socket.onerror = (msg) => {
                 debug(`WebSocket Error: ${msg.data}`);
@@ -264,6 +301,14 @@
                 try {
                     debug(`WebSocket Recv: ${msg.data}`);
                     //XXX: TODO What are you going to do here?
+                    const data = JSON.parse(msg.data);
+                    for (entity in data) {
+                        if (world[entity] != data[entity]) {
+                            world[entity] = data[entity];
+                            drawNext = true;
+                            counter = Number(entity.split('X')[1]) + 1;
+                        }
+                    }
                 } catch (e) {
                     alert(`socket on message: ${e}`);
                 }
